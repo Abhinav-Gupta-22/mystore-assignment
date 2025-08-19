@@ -1,7 +1,7 @@
 // components/ProductDetails.js
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import PropTypes from 'prop-types';
 
@@ -15,21 +15,66 @@ const ProductDetails = ({
   availableSizesForColor = [],
 }) => {
   // Find the selected variant for additional info
-  const selectedVariant = product.variants?.find(
-    (v) => v.color === selectedColor,
-  ) || product.variants?.[0];
+  const selectedVariant = useMemo(() => {
+    if (!product?.variants?.length) return null;
+    return product.variants.find(v => v.color === selectedColor) || product.variants[0];
+  }, [product?.variants, selectedColor]);
 
-  // Get the current image (use variant image if available, otherwise fall back to product image)
-  const currentImage = selectedVariant?.image || product.image || '/images/placeholder-product.jpg';
-  
   // Format price to 2 decimal places
-  const formattedPrice = product.price?.toFixed(2) || '0.00';
+  const formattedPrice = useMemo(() => {
+    return product?.price ? Number(product.price).toFixed(2) : '0.00';
+  }, [product?.price]);
   
-  // Handle image error
-  const handleImageError = (e) => {
-    e.target.onerror = null;
-    e.target.src = '/images/placeholder-product.jpg';
-  };
+  // Image state management
+  const [currentImage, setCurrentImage] = useState('');
+  const [imageError, setImageError] = useState(false);
+
+  // Update image source when product or selected color changes
+  useEffect(() => {
+    if (!product) {
+      setCurrentImage('');
+      setImageError(true);
+      return;
+    }
+
+    let imageSource = '';
+    
+    // Try to get image from selected variant
+    if (selectedVariant?.image) {
+      imageSource = selectedVariant.image;
+    } 
+    // Fall back to product image
+    else if (product.image) {
+      imageSource = product.image;
+    }
+    
+    // If we have a valid image source, try to load it
+    if (imageSource) {
+      const img = new Image();
+      img.src = imageSource;
+      
+      img.onload = () => {
+        setCurrentImage(imageSource);
+        setImageError(false);
+      };
+      
+      img.onerror = () => {
+        console.error('Failed to load image:', imageSource);
+        setCurrentImage('');
+        setImageError(true);
+      };
+    } else {
+      setCurrentImage('');
+      setImageError(true);
+    }
+  }, [product, selectedVariant]);
+
+  // Handle image error from Next.js Image component
+  const handleImageError = useCallback((e) => {
+    console.error('Image load error:', e);
+    setImageError(true);
+    setCurrentImage('');
+  }, []);
 
   // Handle color selection
   const handleColorSelect = (color) => {
@@ -41,19 +86,42 @@ const ProductDetails = ({
   return (
     <div className="flex flex-col md:flex-row gap-8">
       {/* Product Image */}
-      <div className="md:w-1/2 flex justify-center items-center bg-gray-100 rounded-lg overflow-hidden shadow-md relative h-96">
+      <div className="md:w-1/2 flex justify-center items-center bg-gray-50 rounded-lg overflow-hidden shadow-sm relative h-96">
         <div className="relative w-full h-full">
-          <Image
-            src={currentImage}
-            alt={product.name}
-            fill
-            className="object-contain p-4"
-            sizes="(max-width: 768px) 100vw, 50vw"
-            priority
-            onError={handleImageError}
-            placeholder="blur"
-            blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
-          />
+          {!imageError && currentImage ? (
+            <Image
+              src={currentImage}
+              alt={product?.name || 'Product image'}
+              fill
+              className="object-contain p-4"
+              sizes="(max-width: 768px) 100vw, 50vw"
+              priority={false}
+              onError={handleImageError}
+              unoptimized={process.env.NODE_ENV !== 'production'}
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 p-6 text-center">
+              <div className="w-24 h-24 text-gray-300 mb-4">
+                <svg 
+                  className="w-full h-full"
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24" 
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={1}
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
+              <span className="text-gray-400 text-sm">
+                {product?.name || 'No image available'}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

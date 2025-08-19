@@ -43,14 +43,22 @@ export function useProducts() {
   };
 }
 
-// Single product fetcher with cache revalidation
+// Single product fetcher with optimized caching
 export function useProduct(id) {
   const { data, error, isLoading } = useSWR(
     id ? `/api/products/${id}` : null,
     fetcher,
     {
+      // Disable automatic revalidation
+      revalidateIfStale: false,
       revalidateOnFocus: false,
-      dedupingInterval: 1000 * 60 * 5, // 5 minutes
+      revalidateOnReconnect: false,
+      // Cache the result for 5 minutes
+      dedupingInterval: 1000 * 60 * 5,
+      // Don't retry on 404 errors
+      shouldRetryOnError: (error) => error.status !== 404,
+      // Only revalidate when explicitly called
+      revalidateOnMount: true
     }
   );
 

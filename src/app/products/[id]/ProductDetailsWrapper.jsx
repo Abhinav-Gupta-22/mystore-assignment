@@ -27,8 +27,10 @@ export default function ProductDetailsWrapper({ initialProduct }) {
     if (product?.variants?.length > 0 && !selectedColor) {
       setSelectedColor(product.variants[0].color);
     }
-    
-    // Add product to recently viewed
+  }, [product?.variants, selectedColor]);
+
+  // Add product to recently viewed when product loads
+  useEffect(() => {
     if (product) {
       const selectedVariant = product.variants?.find(v => v.color === selectedColor) || product.variants?.[0];
       addToRecentlyViewed({
@@ -38,7 +40,8 @@ export default function ProductDetailsWrapper({ initialProduct }) {
         imageUrl: selectedVariant?.image || product.image || '/images/placeholder-product.jpg',
       });
     }
-  }, [product, selectedColor]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.id]); // Only run when product ID changes
 
   // Calculate available sizes for the selected color
   const availableSizesForColor = useMemo(() => {
@@ -46,6 +49,12 @@ export default function ProductDetailsWrapper({ initialProduct }) {
     const variant = product.variants.find(v => v.color === selectedColor);
     return variant?.sizes || [];
   }, [selectedColor, product?.variants]);
+
+  // Memoize the selected variant to prevent unnecessary recalculations
+  const selectedVariant = useMemo(() => {
+    if (!product?.variants?.length) return null;
+    return product.variants.find(v => v.color === selectedColor) || product.variants[0];
+  }, [product?.variants, selectedColor]);
 
   // Reset size when color changes
   useEffect(() => {
