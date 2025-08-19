@@ -52,13 +52,22 @@ export default function CartPage() {
             <div key={itemId} className="p-4 border-b">
               <div className="grid grid-cols-12 gap-4 items-center">
                 <div className="col-span-5 flex items-center">
-                  <div className="w-20 h-20 bg-gray-100 rounded overflow-hidden mr-4 relative">
-                    <Image 
-                      src={item.imageUrl || '/placeholder-product.jpg'} 
-                      alt={item.name} 
-                      fill
-                      className="object-cover"
-                    />
+                  <div className="w-20 h-20 bg-gray-100 rounded overflow-hidden mr-4 relative flex items-center justify-center">
+                    <div className="absolute inset-0">
+                      <Image 
+                        src={item.imageUrl || '/images/placeholder-product.jpg'} 
+                        alt={item.name} 
+                        fill
+                        className="object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                    </div>
+                    <div className="hidden w-full h-full items-center justify-center text-xs text-center p-1 font-medium text-gray-600">
+                      {item.name}
+                    </div>
                   </div>
                   <div>
                     <h3 className="font-medium">{item.name}</h3>

@@ -38,13 +38,22 @@ const RecentlyViewed = ({ currentProductId }) => {
               className="group block rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow duration-200"
               aria-label={`View ${product.name} details`}
             >
-              <div className="relative aspect-square overflow-hidden">
-                <img
-                  src={product.imageUrl}
-                  alt={product.name}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  loading="lazy"
-                />
+              <div className="relative aspect-square overflow-hidden bg-gray-100">
+                <div className="absolute inset-0">
+                  <img
+                    src={product.imageUrl || '/images/placeholder-product.jpg'}
+                    alt={product.name}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    loading="lazy"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                </div>
+                <div className="hidden w-full h-full items-center justify-center p-2 text-center text-sm font-medium text-gray-600">
+                  {product.name}
+                </div>
               </div>
               <div className="p-4">
                 <h3 className="text-lg font-semibold text-gray-800 mb-1 line-clamp-2">

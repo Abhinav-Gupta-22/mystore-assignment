@@ -1,5 +1,8 @@
 // components/ProductDetails.js
-import React from 'react';
+'use client';
+
+import React, { useState } from 'react';
+import Image from 'next/image';
 import PropTypes from 'prop-types';
 
 const ProductDetails = ({
@@ -12,12 +15,21 @@ const ProductDetails = ({
   availableSizesForColor = [],
 }) => {
   // Find the selected variant for additional info
-  const selectedVariant = product.variants.find(
+  const selectedVariant = product.variants?.find(
     (v) => v.color === selectedColor,
-  );
+  ) || product.variants?.[0];
 
+  // Get the current image (use variant image if available, otherwise fall back to product image)
+  const currentImage = selectedVariant?.image || product.image || '/images/placeholder-product.jpg';
+  
   // Format price to 2 decimal places
-  const formattedPrice = product.price.toFixed(2);
+  const formattedPrice = product.price?.toFixed(2) || '0.00';
+  
+  // Handle image error
+  const handleImageError = (e) => {
+    e.target.onerror = null;
+    e.target.src = '/images/placeholder-product.jpg';
+  };
 
   // Handle color selection
   const handleColorSelect = (color) => {
@@ -29,13 +41,20 @@ const ProductDetails = ({
   return (
     <div className="flex flex-col md:flex-row gap-8">
       {/* Product Image */}
-      <div className="md:w-1/2 flex justify-center items-center bg-gray-100 rounded-lg overflow-hidden shadow-md">
-        <img 
-          src={product.imageUrl} 
-          alt={product.name} 
-          className="w-full h-auto object-cover"
-          loading="lazy"
-        />
+      <div className="md:w-1/2 flex justify-center items-center bg-gray-100 rounded-lg overflow-hidden shadow-md relative h-96">
+        <div className="relative w-full h-full">
+          <Image
+            src={currentImage}
+            alt={product.name}
+            fill
+            className="object-contain p-4"
+            sizes="(max-width: 768px) 100vw, 50vw"
+            priority
+            onError={handleImageError}
+            placeholder="blur"
+            blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+          />
+        </div>
       </div>
 
       {/* Product Info */}
@@ -63,7 +82,7 @@ const ProductDetails = ({
                     ? 'border-blue-500 ring-2 ring-blue-300'
                     : 'border-gray-300 hover:border-blue-400'
                 }`}
-                style={{ backgroundColor: variant.hex }}
+                style={{ backgroundColor: variant.color.toLowerCase() }}
                 onClick={() => handleColorSelect(variant.color)}
                 title={variant.color}
                 aria-label={`Color ${variant.color}`}
@@ -124,7 +143,7 @@ const ProductDetails = ({
 
 ProductDetails.propTypes = {
   product: PropTypes.shape({
-    id: PropTypes.string.isRequired,
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
     name: PropTypes.string.isRequired,
     description: PropTypes.string.isRequired,
     price: PropTypes.number.isRequired,
@@ -132,9 +151,9 @@ ProductDetails.propTypes = {
     variants: PropTypes.arrayOf(
       PropTypes.shape({
         color: PropTypes.string.isRequired,
-        hex: PropTypes.string.isRequired,
         sizes: PropTypes.arrayOf(PropTypes.string).isRequired,
-      })
+        image: PropTypes.string,
+      }),
     ).isRequired,
   }).isRequired,
   selectedColor: PropTypes.string,
